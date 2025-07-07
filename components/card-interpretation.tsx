@@ -327,20 +327,103 @@ export default function CardInterpretation({
                 } relative overflow-hidden group`}
                 onClick={() => setSelectedCardIndex(index)}
               >
-                <div
-                  className={`bg-gradient-to-br ${getSuitColor(card.suit)} text-white rounded-lg p-6 border border-yellow-400/20 relative overflow-hidden`}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-yellow-400/20 to-transparent" />
-                  <div className="text-center relative">
-                    <div className="text-xs font-bold opacity-90 mb-2 tracking-widest">
+                {/* Art Deco Tarot Card Template */}
+                <div className="bg-black rounded-lg p-4 border-2 border-yellow-600/50 relative overflow-hidden aspect-[2/3] min-h-[280px]">
+                  {/* Ornate Border Pattern */}
+                  <div className="absolute inset-2 border-2 border-yellow-500/60 rounded-md">
+                    {/* Corner decorative elements */}
+                    <div className="absolute -top-1 -left-1 w-4 h-4 border-l-4 border-t-4 border-yellow-500/80" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 border-r-4 border-t-4 border-yellow-500/80" />
+                    <div className="absolute -bottom-1 -left-1 w-4 h-4 border-l-4 border-b-4 border-yellow-500/80" />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-r-4 border-b-4 border-yellow-500/80" />
+                  </div>
+
+                  {/* Top Sun Symbol */}
+                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="w-8 h-8 bg-yellow-500/80 rounded-full flex items-center justify-center relative">
+                      <div className="text-black text-xs">☉</div>
+                      {/* Sun rays */}
+                      <div className="absolute inset-0">
+                        {[...Array(8)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="absolute w-0.5 h-3 bg-yellow-500/60"
+                            style={{
+                              top: "-6px",
+                              left: "50%",
+                              transformOrigin: "50% 18px",
+                              transform: `translateX(-50%) rotate(${i * 45}deg)`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Side decorative elements */}
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 space-y-4">
+                    <div className="w-2 h-6 border-l-2 border-yellow-500/40" />
+                    <div className="w-3 h-3 border border-yellow-500/40 rotate-45" />
+                    <div className="w-2 h-6 border-l-2 border-yellow-500/40" />
+                  </div>
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 space-y-4">
+                    <div className="w-2 h-6 border-r-2 border-yellow-500/40" />
+                    <div className="w-3 h-3 border border-yellow-500/40 rotate-45" />
+                    <div className="w-2 h-6 border-r-2 border-yellow-500/40" />
+                  </div>
+
+                  {/* Central Content Area */}
+                  <div className="absolute top-16 left-6 right-6 bottom-16 bg-gradient-to-br from-yellow-600/90 to-yellow-500/90 rounded-lg border border-yellow-400/50 flex flex-col justify-center items-center p-4 text-center">
+                    <div className="text-xs font-bold text-black/80 mb-2 tracking-widest">
                       {spread.positions[index].name.toUpperCase()}
                     </div>
-                    <div className="text-lg font-bold mb-3 tracking-wide">{card.name.toUpperCase()}</div>
-                    <div className="text-xs opacity-75 tracking-wider">
+                    <div className="text-lg font-bold text-black mb-2 tracking-wide leading-tight">
+                      {card.name.toUpperCase()}
+                    </div>
+                    <div className="text-xs text-black/70 tracking-wider">
                       {card.suit.toUpperCase()} • {card.type.toUpperCase()}
                     </div>
                   </div>
+
+                  {/* Bottom Eye Symbol */}
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+                    <div className="w-8 h-4 border border-yellow-500/60 rounded-full flex items-center justify-center relative">
+                      <div className="w-2 h-2 bg-yellow-500/80 rounded-full" />
+                      {/* Eye rays */}
+                      <div className="absolute inset-0">
+                        {[...Array(6)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="absolute w-0.5 h-2 bg-yellow-500/40"
+                            style={{
+                              bottom: "-4px",
+                              left: "50%",
+                              transformOrigin: "50% 0px",
+                              transform: `translateX(-50%) rotate(${(i - 2.5) * 15}deg)`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mystical corner symbols */}
+                  <div className="absolute top-8 left-4 text-yellow-500/60 text-xs">♦</div>
+                  <div className="absolute top-8 right-4 text-yellow-500/60 text-xs">♦</div>
+                  <div className="absolute bottom-8 left-4 text-yellow-500/60 text-xs">♦</div>
+                  <div className="absolute bottom-8 right-4 text-yellow-500/60 text-xs">♦</div>
+
+                  {/* Selection indicator overlay */}
+                  {selectedCardIndex === index && (
+                    <div className="absolute inset-0 bg-yellow-500/20 rounded-lg border-2 border-yellow-400/80 flex items-center justify-center">
+                      <div className="bg-black/80 text-yellow-200 px-3 py-1 rounded text-xs font-bold tracking-widest border border-yellow-500/50">
+                        SELECTED
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hover effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg" />
                 </div>
               </div>
             ))}

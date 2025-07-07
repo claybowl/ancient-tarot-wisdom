@@ -145,7 +145,7 @@ const tarotDeck: TarotCard[] = [
     id: 15,
     name: "Queen of Cups",
     suit: "Cups",
-    type: "Court",
+    type: "Minor",
     number: 13,
     upright: true,
     keywords: ["compassion", "calm", "comfort"],
@@ -370,25 +370,57 @@ export default function TarotDeck({ onCardSelect }: TarotDeckProps) {
               } relative overflow-hidden group`}
               onClick={() => !isSelected && handleCardClick(card)}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardContent className="p-4 relative">
-                <div
-                  className={`bg-gradient-to-br ${getSuitColor(card.suit)} text-black rounded-lg p-4 h-36 flex flex-col justify-between border border-yellow-400/30 relative overflow-hidden`}
-                >
-                  <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-yellow-300/20 to-transparent" />
-                  <div className="text-center relative">
-                    <div className="text-xs font-bold opacity-90 mb-1 tracking-widest">{card.suit.toUpperCase()}</div>
-                    <div className="text-sm font-bold leading-tight tracking-wide">{card.name.toUpperCase()}</div>
-                  </div>
-                  <div className="text-center">
-                    {isSelected ? (
-                      <div className="text-xs opacity-75 font-semibold tracking-wide">SELECTED</div>
-                    ) : (
-                      <div className="p-1 border border-black/30 rounded-full inline-block">
-                        <Eye className="w-3 h-3 opacity-75" />
+                <div className="bg-gradient-to-br from-slate-900 to-black text-yellow-400 rounded-lg p-4 h-36 flex flex-col justify-center items-center border-2 border-yellow-600/50 relative overflow-hidden shadow-lg">
+                  {/* Tarot Card Back Pattern */}
+                  <div className="absolute inset-2 border-2 border-yellow-500/30 rounded-md">
+                    <div className="absolute inset-2 border border-yellow-400/20 rounded-sm">
+                      {/* Central mystical symbol */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 border-2 border-yellow-500/40 rounded-full flex items-center justify-center relative">
+                          <div className="w-8 h-8 border border-yellow-400/30 rounded-full">
+                            <div className="w-full h-full bg-gradient-to-br from-yellow-500/20 to-transparent rounded-full" />
+                          </div>
+                          {/* Decorative corners */}
+                          <div className="absolute -top-1 -left-1 w-2 h-2 border-l-2 border-t-2 border-yellow-500/40" />
+                          <div className="absolute -top-1 -right-1 w-2 h-2 border-r-2 border-t-2 border-yellow-500/40" />
+                          <div className="absolute -bottom-1 -left-1 w-2 h-2 border-l-2 border-b-2 border-yellow-500/40" />
+                          <div className="absolute -bottom-1 -right-1 w-2 h-2 border-r-2 border-b-2 border-yellow-500/40" />
+                        </div>
                       </div>
-                    )}
+
+                      {/* Corner decorative elements */}
+                      <div className="absolute top-1 left-1 w-3 h-3">
+                        <div className="w-full h-full border-l-2 border-t-2 border-yellow-500/30 rounded-tl-sm" />
+                      </div>
+                      <div className="absolute top-1 right-1 w-3 h-3">
+                        <div className="w-full h-full border-r-2 border-t-2 border-yellow-500/30 rounded-tr-sm" />
+                      </div>
+                      <div className="absolute bottom-1 left-1 w-3 h-3">
+                        <div className="w-full h-full border-l-2 border-b-2 border-yellow-500/30 rounded-bl-sm" />
+                      </div>
+                      <div className="absolute bottom-1 right-1 w-3 h-3">
+                        <div className="w-full h-full border-r-2 border-b-2 border-yellow-500/30 rounded-br-sm" />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Subtle pattern overlay */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.05)_0%,transparent_70%)] rounded-lg" />
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_48%,rgba(255,215,0,0.02)_48%,rgba(255,215,0,0.02)_52%,transparent_52%)] bg-[length:8px_8px] rounded-lg" />
+
+                  {/* Selection indicator */}
+                  {isSelected ? (
+                    <div className="absolute inset-0 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                      <div className="text-yellow-200 text-xs font-bold tracking-widest bg-black/50 px-2 py-1 rounded border border-yellow-500/50">
+                        SELECTED
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-2 right-2 opacity-60">
+                      <Eye className="w-3 h-3 text-yellow-500" />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
