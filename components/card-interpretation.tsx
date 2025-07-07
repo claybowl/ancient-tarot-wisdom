@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import type { TarotCard, TarotSpread } from "@/types/tarot"
-import { Sparkles, BookOpen, Brain, Eye, ArrowLeft, RotateCcw } from "lucide-react"
-import { generateTarotReading } from "@/lib/grok-reading"
+import { Sparkles, BookOpen, Brain, Eye, ArrowLeft, RotateCcw, Key, AlertCircle } from "lucide-react"
+import { APIKeyError } from "@/lib/grok-reading" // only for instanceof check – type only, NOT executed in client
 
 interface CardInterpretationProps {
   cards: TarotCard[]
@@ -43,28 +45,73 @@ export default function CardInterpretation({
   const [aiReading, setAiReading] = useState<AIReading | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false)
+  const [apiKey, setApiKey] = useState("")
+  const [isApiKeyError, setIsApiKeyError] = useState(false)
 
   useEffect(() => {
     generateReading()
   }, [])
 
-  const generateReading = async () => {
+  const generateReading = async (providedApiKey?: string) => {
     setIsLoading(true)
     setError(null)
+    setIsApiKeyError(false)
 
     try {
-      const reading = await generateTarotReading({
-        cards,
-        spread,
-        userPrompt,
-        interpretationStyle,
+      const res = await fetch("/api/generate-reading", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cards,
+          spread,
+          userPrompt,
+          interpretationStyle,
+          apiKey: providedApiKey,
+        }),
       })
-      setAiReading(reading)
+
+      const data = await res.json()
+
+      if (!data.ok) {
+        if (res.status === 400) throw new APIKeyError(data.message)
+        throw new Error(data.message || "Unknown error")
+      }
+
+      setAiReading(data.reading)
+      setShowApiKeyInput(false)
     } catch (err) {
-      setError("Failed to generate reading. Please try again.")
       console.error("Error generating reading:", err)
+
+      if (err instanceof APIKeyError) {
+        setIsApiKeyError(true)
+        setError(err.message)
+        setShowApiKeyInput(true)
+      } else {
+        let errorMessage = "Failed to generate reading. Please try again."
+
+        if (err instanceof Error) {
+          if (err.message.includes("network") || err.message.includes("fetch")) {
+            errorMessage = "Network error. Please check your connection and try again."
+          } else if (err.message.includes("JSON") || err.message.includes("parse")) {
+            errorMessage = "Received invalid response from AI service. Please try again."
+          } else if (err.message.includes("quota") || err.message.includes("limit")) {
+            errorMessage = "API quota exceeded. Please try again later or check your API key limits."
+          }
+        }
+
+        setError(errorMessage)
+      }
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleApiKeySubmit = () => {
+    if (apiKey.trim()) {
+      // Save to localStorage for future use
+      localStorage.setItem("openai_api_key", apiKey.trim())
+      generateReading(apiKey.trim())
     }
   }
 
@@ -106,18 +153,18 @@ export default function CardInterpretation({
     return (
       <div className="space-y-8">
         <div className="text-center">
-          <Card className="max-w-2xl mx-auto bg-gradient-to-br from-slate-900/90 to-purple-900/90 backdrop-blur-sm border-2 border-purple-500/30">
+          <Card className="max-w-2xl mx-auto bg-gradient-to-br from-black/90 to-yellow-900/20 backdrop-blur-sm border-2 border-yellow-600/30">
             <CardContent className="p-12">
               <div className="flex flex-col items-center gap-6">
                 <div className="relative">
-                  <div className="w-16 h-16 border-4 border-purple-500 rounded-full animate-spin" />
+                  <div className="w-16 h-16 border-4 border-yellow-600 rounded-full animate-spin" />
                   <div className="absolute inset-0 w-16 h-16 border-4 border-yellow-400 rounded-full animate-ping opacity-20" />
                 </div>
                 <div className="text-center">
-                  <h3 className="text-xl font-bold text-purple-200 mb-2 font-serif tracking-wider">
+                  <h3 className="text-xl font-bold text-yellow-200 mb-2 font-serif tracking-wider">
                     CHANNELING COSMIC WISDOM
                   </h3>
-                  <p className="text-purple-300 leading-relaxed">
+                  <p className="text-yellow-300 leading-relaxed">
                     The AI oracle is interpreting your cards and weaving together the threads of destiny...
                   </p>
                 </div>
@@ -133,17 +180,66 @@ export default function CardInterpretation({
     return (
       <div className="space-y-8">
         <div className="text-center">
-          <Card className="max-w-2xl mx-auto bg-gradient-to-br from-slate-900/90 to-red-900/90 backdrop-blur-sm border-2 border-red-500/30">
+          <Card className="max-w-3xl mx-auto bg-gradient-to-br from-black/90 to-red-900/20 backdrop-blur-sm border-2 border-red-500/30">
             <CardContent className="p-12">
               <div className="text-center">
-                <h3 className="text-xl font-bold text-red-200 mb-4 font-serif tracking-wider">COSMIC INTERFERENCE</h3>
-                <p className="text-red-300 mb-6">{error}</p>
-                <Button
-                  onClick={generateReading}
-                  className="bg-gradient-to-r from-red-600 to-purple-600 hover:from-red-700 hover:to-purple-700 text-white font-bold tracking-widest"
-                >
-                  TRY AGAIN
-                </Button>
+                <div className="flex justify-center mb-4">
+                  {isApiKeyError ? (
+                    <Key className="w-12 h-12 text-yellow-400" />
+                  ) : (
+                    <AlertCircle className="w-12 h-12 text-red-400" />
+                  )}
+                </div>
+                <h3 className="text-xl font-bold text-yellow-200 mb-4 font-serif tracking-wider">
+                  {isApiKeyError ? "API KEY REQUIRED" : "COSMIC INTERFERENCE"}
+                </h3>
+                <div className="text-yellow-300 mb-6 whitespace-pre-line leading-relaxed">{error}</div>
+
+                {showApiKeyInput && (
+                  <div className="space-y-4 mb-6">
+                    <div className="text-left max-w-md mx-auto">
+                      <Label htmlFor="apiKey" className="text-yellow-200 font-semibold tracking-wide">
+                        Enter your OpenAI API Key:
+                      </Label>
+                      <Input
+                        id="apiKey"
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => setApiKey(e.target.value)}
+                        placeholder="sk-..."
+                        className="mt-2 bg-black/50 border-yellow-600/50 text-yellow-200 placeholder:text-yellow-400/50"
+                        onKeyPress={(e) => e.key === "Enter" && handleApiKeySubmit()}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleApiKeySubmit}
+                      disabled={!apiKey.trim()}
+                      className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 text-black font-bold tracking-widest"
+                    >
+                      <Key className="w-4 h-4 mr-2" />
+                      USE THIS KEY
+                    </Button>
+                  </div>
+                )}
+
+                <div className="flex justify-center gap-4">
+                  <Button
+                    onClick={() => generateReading()}
+                    className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 text-black font-bold tracking-widest"
+                  >
+                    TRY AGAIN
+                  </Button>
+                  {!showApiKeyInput && isApiKeyError && (
+                    <Button
+                      onClick={() => setShowApiKeyInput(true)}
+                      variant="outline"
+                      className="border-yellow-600/50 text-yellow-200 hover:bg-yellow-900/30 bg-black/50 font-semibold tracking-wide"
+                    >
+                      <Key className="w-4 h-4 mr-2" />
+                      ENTER API KEY
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -157,15 +253,15 @@ export default function CardInterpretation({
       {/* Header */}
       <div className="text-center relative">
         <div className="absolute inset-0 flex items-center justify-center opacity-5">
-          <div className="w-80 h-80 border-8 border-purple-500 rounded-full" />
-          <div className="absolute w-64 h-64 border-4 border-yellow-400 rounded-full rotate-45" />
+          <div className="w-80 h-80 border-8 border-yellow-600 rounded-full" />
+          <div className="absolute w-64 h-64 border-4 border-yellow-500 rounded-full rotate-45" />
         </div>
-        <h2 className="relative text-4xl font-bold text-purple-200 mb-3 font-serif tracking-widest">
+        <h2 className="relative text-4xl font-bold text-yellow-200 mb-3 font-serif tracking-widest">
           YOUR MYSTICAL READING
         </h2>
         <div className="relative mb-6">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent h-px top-1/2" />
-          <p className="relative text-lg text-purple-300 bg-slate-900/50 px-8 py-2 inline-block tracking-wide">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-600/30 to-transparent h-px top-1/2" />
+          <p className="relative text-lg text-yellow-300 bg-black/80 px-8 py-2 inline-block tracking-wide border border-yellow-600/30">
             {spread.name.toUpperCase()} • AI-POWERED INTERPRETATION
           </p>
         </div>
@@ -173,14 +269,14 @@ export default function CardInterpretation({
           <Button
             variant="outline"
             onClick={onBackToSelection}
-            className="border-purple-400/50 text-purple-200 hover:bg-purple-900/30 bg-slate-900/50 font-semibold tracking-wide px-6 py-3"
+            className="border-yellow-600/50 text-yellow-200 hover:bg-yellow-900/30 bg-black/50 font-semibold tracking-wide px-6 py-3"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             RETURN TO SELECTION
           </Button>
           <Button
             onClick={onNewReading}
-            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold tracking-widest border border-yellow-400/30 px-6 py-3"
+            className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 text-black font-bold tracking-widest border border-yellow-400/50 px-6 py-3"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             NEW READING
@@ -189,34 +285,34 @@ export default function CardInterpretation({
       </div>
 
       {/* AI-Generated Overall Reading */}
-      <Card className="bg-gradient-to-br from-purple-900/80 to-indigo-900/80 border-2 border-purple-400/30 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.05)_0%,transparent_70%)]" />
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-purple-500 to-blue-500" />
+      <Card className="bg-gradient-to-br from-black/90 to-yellow-900/20 border-2 border-yellow-600/30 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(218,165,32,0.05)_0%,transparent_70%)]" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600" />
         <CardHeader className="relative">
           <div className="text-center mb-4">
-            <div className="inline-block p-4 border-2 border-yellow-400/50 rounded-full mb-4">
-              <Sparkles className="w-8 h-8 text-yellow-400" />
+            <div className="inline-block p-4 border-2 border-yellow-600/50 rounded-full mb-4 bg-black/50">
+              <Sparkles className="w-8 h-8 text-yellow-500" />
             </div>
           </div>
-          <CardTitle className="text-purple-200 flex items-center justify-center gap-3 font-serif tracking-wider text-2xl">
+          <CardTitle className="text-yellow-200 flex items-center justify-center gap-3 font-serif tracking-wider text-2xl">
             THE COSMIC REVELATION
           </CardTitle>
         </CardHeader>
         <CardContent className="relative">
-          <div className="prose prose-purple max-w-none">
-            <p className="text-purple-200 leading-relaxed text-lg whitespace-pre-line">{aiReading?.overallReading}</p>
+          <div className="prose prose-yellow max-w-none">
+            <p className="text-yellow-200 leading-relaxed text-lg whitespace-pre-line">{aiReading?.overallReading}</p>
           </div>
         </CardContent>
       </Card>
 
       {/* Cards Overview */}
-      <Card className="bg-gradient-to-br from-slate-900/90 to-purple-900/90 backdrop-blur-sm border-2 border-purple-500/30 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-400 via-purple-500 to-blue-500" />
+      <Card className="bg-gradient-to-br from-black/90 to-yellow-900/20 backdrop-blur-sm border-2 border-yellow-600/30 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600" />
         <CardHeader className="relative">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-yellow-400/10 to-transparent" />
-          <CardTitle className="text-purple-200 flex items-center gap-3 font-serif tracking-wider">
-            <div className="p-2 border-2 border-yellow-400/50 rounded-full">
-              <StyleIcon className="w-5 h-5 text-yellow-400" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-yellow-500/10 to-transparent" />
+          <CardTitle className="text-yellow-200 flex items-center gap-3 font-serif tracking-wider">
+            <div className="p-2 border-2 border-yellow-600/50 rounded-full bg-black/50">
+              <StyleIcon className="w-5 h-5 text-yellow-500" />
             </div>
             YOUR SACRED CARDS
           </CardTitle>
@@ -227,7 +323,7 @@ export default function CardInterpretation({
               <div
                 key={index}
                 className={`cursor-pointer transition-all duration-500 hover:scale-105 ${
-                  selectedCardIndex === index ? "ring-2 ring-yellow-400/50 shadow-lg shadow-yellow-400/20" : ""
+                  selectedCardIndex === index ? "ring-2 ring-yellow-500/50 shadow-lg shadow-yellow-500/20" : ""
                 } relative overflow-hidden group`}
                 onClick={() => setSelectedCardIndex(index)}
               >
@@ -253,11 +349,11 @@ export default function CardInterpretation({
       </Card>
 
       {/* Detailed AI Interpretation */}
-      <Card className="bg-gradient-to-br from-slate-900/90 to-purple-900/90 backdrop-blur-sm border-2 border-purple-500/30 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_48%,rgba(255,215,0,0.03)_48%,rgba(255,215,0,0.03)_52%,transparent_52%)] bg-[length:30px_30px]" />
-        <CardHeader className="relative border-b border-purple-500/30">
+      <Card className="bg-gradient-to-br from-black/90 to-yellow-900/20 backdrop-blur-sm border-2 border-yellow-600/30 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_48%,rgba(218,165,32,0.03)_48%,rgba(218,165,32,0.03)_52%,transparent_52%)] bg-[length:30px_30px]" />
+        <CardHeader className="relative border-b border-yellow-600/30">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-purple-200 font-serif tracking-wider text-xl">
+            <CardTitle className="text-yellow-200 font-serif tracking-wider text-xl">
               {cards[selectedCardIndex]?.name.toUpperCase()} - {spread.positions[selectedCardIndex]?.name.toUpperCase()}
             </CardTitle>
             <Badge
@@ -266,46 +362,46 @@ export default function CardInterpretation({
               {cards[selectedCardIndex]?.suit.toUpperCase()}
             </Badge>
           </div>
-          <p className="text-purple-300 leading-relaxed tracking-wide">
+          <p className="text-yellow-300 leading-relaxed tracking-wide">
             {spread.positions[selectedCardIndex]?.description}
           </p>
         </CardHeader>
         <CardContent className="relative">
           <Tabs defaultValue="meaning" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 border border-purple-500/30">
+            <TabsList className="grid w-full grid-cols-3 bg-black/50 border border-yellow-600/30">
               <TabsTrigger
                 value="meaning"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white font-semibold tracking-wide"
+                className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black font-semibold tracking-wide"
               >
                 MEANING
               </TabsTrigger>
               <TabsTrigger
                 value="advice"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white font-semibold tracking-wide"
+                className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black font-semibold tracking-wide"
               >
                 GUIDANCE
               </TabsTrigger>
               <TabsTrigger
                 value="symbolism"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white font-semibold tracking-wide"
+                className="data-[state=active]:bg-yellow-600 data-[state=active]:text-black font-semibold tracking-wide"
               >
                 SYMBOLISM
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="meaning" className="mt-8">
-              <div className="prose prose-purple max-w-none">
-                <p className="text-purple-200 leading-relaxed text-lg whitespace-pre-line">
+              <div className="prose prose-yellow max-w-none">
+                <p className="text-yellow-200 leading-relaxed text-lg whitespace-pre-line">
                   {aiReading?.cardInterpretations[selectedCardIndex]?.meaning}
                 </p>
-                <div className="mt-6 p-6 bg-gradient-to-br from-purple-800/30 to-indigo-800/30 rounded-lg border border-purple-500/30 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-yellow-400/10 to-transparent" />
-                  <h4 className="font-bold text-purple-200 mb-4 text-lg tracking-wider">ARCHETYPAL ENERGIES:</h4>
+                <div className="mt-6 p-6 bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 rounded-lg border border-yellow-600/30 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-yellow-500/10 to-transparent" />
+                  <h4 className="font-bold text-yellow-200 mb-4 text-lg tracking-wider">ARCHETYPAL ENERGIES:</h4>
                   <div className="flex flex-wrap gap-3">
                     {cards[selectedCardIndex]?.keywords.map((keyword, idx) => (
                       <Badge
                         key={idx}
-                        className="bg-purple-700/50 text-purple-200 border border-purple-500/50 px-3 py-1 font-semibold tracking-wide"
+                        className="bg-yellow-700/50 text-yellow-200 border border-yellow-600/50 px-3 py-1 font-semibold tracking-wide"
                       >
                         {keyword.toUpperCase()}
                       </Badge>
@@ -316,16 +412,16 @@ export default function CardInterpretation({
             </TabsContent>
 
             <TabsContent value="advice" className="mt-8">
-              <div className="prose prose-purple max-w-none">
-                <p className="text-purple-200 leading-relaxed text-lg whitespace-pre-line">
+              <div className="prose prose-yellow max-w-none">
+                <p className="text-yellow-200 leading-relaxed text-lg whitespace-pre-line">
                   {aiReading?.cardInterpretations[selectedCardIndex]?.advice}
                 </p>
               </div>
             </TabsContent>
 
             <TabsContent value="symbolism" className="mt-8">
-              <div className="prose prose-purple max-w-none">
-                <p className="text-purple-200 leading-relaxed text-lg whitespace-pre-line">
+              <div className="prose prose-yellow max-w-none">
+                <p className="text-yellow-200 leading-relaxed text-lg whitespace-pre-line">
                   {aiReading?.cardInterpretations[selectedCardIndex]?.symbolism}
                 </p>
               </div>
@@ -336,36 +432,36 @@ export default function CardInterpretation({
 
       {/* Key Insights and Action Steps */}
       <div className="grid md:grid-cols-2 gap-8">
-        <Card className="bg-gradient-to-br from-purple-900/80 to-indigo-900/80 border-2 border-purple-400/30 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 via-purple-500 to-blue-500" />
+        <Card className="bg-gradient-to-br from-black/90 to-yellow-900/20 border-2 border-yellow-600/30 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600" />
           <CardHeader className="relative">
-            <CardTitle className="text-purple-200 font-serif tracking-wider">KEY INSIGHTS</CardTitle>
+            <CardTitle className="text-yellow-200 font-serif tracking-wider">KEY INSIGHTS</CardTitle>
           </CardHeader>
           <CardContent className="relative">
             <ul className="space-y-3">
               {aiReading?.keyInsights.map((insight, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <span className="text-yellow-400 font-bold text-lg">◆</span>
-                  <span className="text-purple-300 leading-relaxed">{insight}</span>
+                  <span className="text-yellow-500 font-bold text-lg">◆</span>
+                  <span className="text-yellow-300 leading-relaxed">{insight}</span>
                 </li>
               ))}
             </ul>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-indigo-900/80 to-purple-900/80 border-2 border-indigo-400/30 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500" />
+        <Card className="bg-gradient-to-br from-black/90 to-yellow-900/20 border-2 border-yellow-600/30 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600" />
           <CardHeader className="relative">
-            <CardTitle className="text-indigo-200 font-serif tracking-wider">GUIDED ACTIONS</CardTitle>
+            <CardTitle className="text-yellow-200 font-serif tracking-wider">GUIDED ACTIONS</CardTitle>
           </CardHeader>
           <CardContent className="relative">
             <ul className="space-y-3">
               {aiReading?.actionSteps.map((step, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <Badge className="bg-indigo-700/50 text-indigo-200 border border-indigo-500/50 text-xs font-bold min-w-[24px] h-6 flex items-center justify-center">
+                  <Badge className="bg-yellow-700/50 text-yellow-200 border border-yellow-600/50 text-xs font-bold min-w-[24px] h-6 flex items-center justify-center">
                     {index + 1}
                   </Badge>
-                  <span className="text-indigo-300 leading-relaxed">{step}</span>
+                  <span className="text-yellow-300 leading-relaxed">{step}</span>
                 </li>
               ))}
             </ul>
