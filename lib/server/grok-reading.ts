@@ -40,22 +40,12 @@ function getModelWithKey(apiKey?: string) {
     return xai("grok-beta")
   }
 
-  // Priority 2: Check OPENAI_API_KEY environment variable
+  // Priority 2: Check OPENAI_API_KEY environment variable (server-only)
   let openaiKey = process.env.OPENAI_API_KEY
 
-  // Priority 3: Check NEXT_PUBLIC_OPENAI_API_KEY environment variable
-  if (!openaiKey) {
-    openaiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY
-  }
-
-  // Priority 4: Check the passed apiKey parameter
+  // Priority 3: Check the passed apiKey parameter (from user input)
   if (!openaiKey && apiKey) {
     openaiKey = apiKey
-  }
-
-  // Priority 5: Check localStorage (client-side only)
-  if (!openaiKey && typeof window !== "undefined") {
-    openaiKey = localStorage.getItem("openai_api_key") || undefined
   }
 
   if (openaiKey && openaiKey.trim().length > 0) {
@@ -65,11 +55,7 @@ function getModelWithKey(apiKey?: string) {
 
   // No valid API key found
   throw new APIKeyError(
-    "No AI API key found. Please set one of the following:\n" +
-      "1. OPENAI_API_KEY environment variable\n" +
-      "2. NEXT_PUBLIC_OPENAI_API_KEY environment variable\n" +
-      "3. Pass apiKey parameter to generateTarotReading\n" +
-      "4. Set localStorage.setItem('openai_api_key', 'your-key') in browser console",
+    "No AI API key found. Please set the OPENAI_API_KEY environment variable in your deployment settings, or provide your own API key when generating a reading.",
   )
 }
 

@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { TarotCard, TarotSpread } from "@/types/tarot"
 import { Sparkles, BookOpen, Brain, Eye, ArrowLeft, RotateCcw, Key, AlertCircle } from "lucide-react"
-import { APIKeyError } from "@/lib/grok-reading" // only for instanceof check – type only, NOT executed in client
 
 interface CardInterpretationProps {
   cards: TarotCard[]
@@ -31,6 +30,14 @@ interface AIReading {
   }
   keyInsights: string[]
   actionSteps: string[]
+}
+
+// Custom error type for API key errors
+class APIKeyError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "APIKeyError"
+  }
 }
 
 export default function CardInterpretation({
@@ -59,6 +66,8 @@ export default function CardInterpretation({
     setIsApiKeyError(false)
 
     try {
+      console.log("Sending request to generate reading...")
+
       const res = await fetch("/api/generate-reading", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,11 +80,26 @@ export default function CardInterpretation({
         }),
       })
 
+      console.log("Response status:", res.status)
+      console.log("Response ok:", res.ok)
+
+      // Check if response is JSON
+      const contentType = res.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await res.text()
+        console.error("Non-JSON response received:", text)
+        throw new Error("Server returned an invalid response. Please try again.")
+      }
+
       const data = await res.json()
+      console.log("Response data:", data)
 
       if (!data.ok) {
-        if (res.status === 400) throw new APIKeyError(data.message)
-        throw new Error(data.message || "Unknown error")
+        if (res.status === 400) {
+          const err = new APIKeyError(data.message || "API key error")
+          throw err
+        }
+        throw new Error(data.message || "Unknown error occurred")
       }
 
       setAiReading(data.reading)
@@ -83,7 +107,7 @@ export default function CardInterpretation({
     } catch (err) {
       console.error("Error generating reading:", err)
 
-      if (err instanceof APIKeyError) {
+      if (err instanceof Error && err.name === "APIKeyError") {
         setIsApiKeyError(true)
         setError(err.message)
         setShowApiKeyInput(true)
@@ -91,12 +115,14 @@ export default function CardInterpretation({
         let errorMessage = "Failed to generate reading. Please try again."
 
         if (err instanceof Error) {
-          if (err.message.includes("network") || err.message.includes("fetch")) {
+          if (err.message.includes("JSON") || err.message.includes("invalid response")) {
+            errorMessage = "Server error. Please try again in a moment."
+          } else if (err.message.includes("network") || err.message.includes("fetch")) {
             errorMessage = "Network error. Please check your connection and try again."
-          } else if (err.message.includes("JSON") || err.message.includes("parse")) {
-            errorMessage = "Received invalid response from AI service. Please try again."
           } else if (err.message.includes("quota") || err.message.includes("limit")) {
             errorMessage = "API quota exceeded. Please try again later or check your API key limits."
+          } else {
+            errorMessage = err.message
           }
         }
 
@@ -109,8 +135,6 @@ export default function CardInterpretation({
 
   const handleApiKeySubmit = () => {
     if (apiKey.trim()) {
-      // Save to localStorage for future use
-      localStorage.setItem("openai_api_key", apiKey.trim())
       generateReading(apiKey.trim())
     }
   }
