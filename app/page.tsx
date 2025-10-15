@@ -8,8 +8,8 @@ import { BookOpen, Sparkles, History, Layout } from "lucide-react"
 import SpreadSelector from "@/components/spread-selector"
 import ReadingInterface from "@/components/reading-interface"
 import EducationModal from "@/components/education-modal"
+import AnimatedHeroCarousel from "@/components/animated-hero-carousel"
 import type { TarotCard, TarotSpread } from "@/types/tarot"
-import Image from "next/image"
 
 export default function TarotApp() {
   const [currentView, setCurrentView] = useState<"home" | "spread" | "reading">("home")
@@ -34,38 +34,25 @@ export default function TarotApp() {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Art Deco Header with Banner */}
-      <header className="relative overflow-hidden bg-black text-white">
-        <div className="absolute inset-0 opacity-20">
-          {/* Art Deco geometric pattern overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(218,165,32,0.1)_0%,transparent_50%)] bg-[length:100px_100px]" />
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_35%,rgba(218,165,32,0.05)_35%,rgba(218,165,32,0.05)_65%,transparent_65%)] bg-[length:40px_40px]" />
+      {/* Animated Carousel Hero */}
+      <header className="relative overflow-hidden bg-black text-white min-h-[600px]">
+        {/* Animated background slides */}
+        <div className="absolute inset-0">
+          <AnimatedHeroCarousel />
         </div>
 
-        {/* Banner Image */}
-        <div className="relative container mx-auto px-4 py-8">
-          <div className="flex justify-center mb-8">
-            <div className="relative max-w-4xl w-full">
-              <Image
-                src="/images/tarot-banner.png"
-                alt="Tarot & I Ching App"
-                width={1200}
-                height={600}
-                className="w-full h-auto rounded-lg shadow-2xl border-2 border-yellow-600/30"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-lg" />
-            </div>
-          </div>
+        {/* Art Deco bottom border */}
+        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600" />
+      </header>
 
-          <div className="text-center">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-600/30 to-transparent h-px top-1/2" />
-              <p className="relative text-xl md:text-2xl text-yellow-200 font-light tracking-[0.3em] bg-black/80 px-8 py-3 inline-block border border-yellow-600/30">
-                ANCIENT WISDOM • MODERN INSIGHT • AI POWERED
-              </p>
-            </div>
-            <div className="flex justify-center gap-6 mt-8">
+      {/* Title and badges section - now below the carousel */}
+      <div className="relative bg-black border-b-2 border-yellow-600/30">
+        <div className="container mx-auto px-4 py-12">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-5xl md:text-7xl font-bold text-yellow-200 mb-8 font-serif tracking-widest">
+              TAROT & I CHING
+            </h1>
+            <div className="flex justify-center gap-6 flex-wrap">
               <Badge
                 variant="secondary"
                 className="bg-black/80 text-yellow-200 border-yellow-600/50 px-4 py-2 backdrop-blur-sm"
@@ -90,10 +77,7 @@ export default function TarotApp() {
             </div>
           </div>
         </div>
-
-        {/* Art Deco bottom border */}
-        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600" />
-      </header>
+      </div>
 
       {/* Navigation */}
       <nav className="bg-black/95 backdrop-blur-sm border-b-2 border-yellow-600/30 sticky top-0 z-40">
