@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateTarotReading, APIKeyError } from "@/lib/grok-reading"
+import { generateTarotReading, APIKeyError } from "@/lib/server/grok-reading"
 import type { TarotCard, TarotSpread } from "@/types/tarot"
 
 /**
